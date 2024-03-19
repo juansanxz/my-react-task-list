@@ -68,7 +68,13 @@ export const TaskList = (props) => {
     function addTask() {
         const newTaskTitle = titleRef.current.value.trim();
         const newTaskDescription = descriptionRef.current.value.trim();
-        let updatedTasks = [...list];
+        console.log(JSON.stringify(list));
+        let updatedTasks = [];
+        if (list !== null) {
+            updatedTasks = [...list];
+        }
+        
+
         if (newTaskDescription !== "") {
             const newTask = {
                 title: newTaskTitle,
@@ -76,7 +82,8 @@ export const TaskList = (props) => {
                 state: false
             };
             updatedTasks = [...updatedTasks, newTask];
-            setList([...list, newTask]);
+            console.log(JSON.stringify(updatedTasks));
+            setList(updatedTasks);
             closePopup();
             
         }
@@ -94,7 +101,7 @@ export const TaskList = (props) => {
         <ul>
             <div>
                 <button onClick={openPopup}>Add Task</button>
-                {list.map((task) => (
+                {list != null && list.map((task) => (
                     <Task key={task.title} title={task.title} description={task.description} state={task.state} onToggleState={handleToggleState} onDeleteClick={handleDeleteClick} onEditClick={handleEditClick} />
                 ))}
             </div>

@@ -15,11 +15,13 @@ export const TaskList = (props) => {
     const handleToggleState = (taskTitle) => {
         const updatedTasks = list.map((task) => {
             if ( taskTitle == task.title) {
+
                 return { ...task, state: !task.state };
             }
             return task;
         });
         setList(updatedTasks); 
+        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
     };
 
     const handleDeleteClick = (taskTitle) => {

@@ -1,56 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { Task } from "./Task";
+import { TaskContext } from "../TaskContext";
+import { taskReducer } from "../reducers/TaskReducer";
+import { useTaskOp } from "../hooks/useTaskOp";
 
 export const TaskList = (props) => {
-    const [list, setList] = useState([]);
-    const [isPopupOpen, setIsPopupOpen] = useState(false);
-    const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
+
+    const [{tasks}, dispatch] = useReducer(taskReducer, {tasks: []});
     const titleRef = useRef(null);
     const descriptionRef = useRef(null);
-    const editTitleRef = useRef(null);
-    const editDescriptionRef = useRef(null);
-    const [currentTaskToEdit, setCurrentTaskToEdit] = useState(0);
+    const [isPopupOpen, setIsPopupOpen] = useState(false);
+    const [addTask, , ] = useTaskOp();
 
-
-    const handleToggleState = (taskTitle) => {
-        const updatedTasks = list.map((task) => {
-            if ( taskTitle == task.title) {
-
-                return { ...task, state: !task.state };
-            }
-            return task;
-        });
-        setList(updatedTasks); 
-        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    };
-
-    const handleDeleteClick = (taskTitle) => {
-        const updatedTasks = list.filter((task) => taskTitle != task.title );
-        setList(updatedTasks); 
-        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    };
-
-    const handleEditClick = (taskTitle) => {
-        setCurrentTaskToEdit(taskTitle);
-        openEditPopup();
-    };
-
-    const handleEditTask = () => {
-        const newTaskTitle = editTitleRef.current.value.trim();
-        const newTaskDescription = editDescriptionRef.current.value.trim();
-        const updatedTasks = list.map((task) => {
-            if (currentTaskToEdit == task.title) {
-                
-                return { ...task, title: newTaskTitle, description: newTaskDescription };
-            }
-            return task;
-        });
-        setList(updatedTasks); 
-        closeEditPopup();
-        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    };
-
-
+  
     const openPopup = () => {
         setIsPopupOpen(true);
     };
@@ -59,89 +21,54 @@ export const TaskList = (props) => {
         setIsPopupOpen(false);
     };
 
-    const openEditPopup = () => {
-        setIsEditPopupOpen(true);
-    };
 
-    const closeEditPopup = () => {
-        setIsEditPopupOpen(false);
-    };
-
-    function addTask() {
-        const newTaskTitle = titleRef.current.value.trim();
-        const newTaskDescription = descriptionRef.current.value.trim();
-        console.log(JSON.stringify(list));
-        let updatedTasks = [];
-        if (list !== null) {
-            updatedTasks = [...list];
-        }
+    function handleAddTask() {
+        const newTask = addTask(titleRef.current.value.trim(), descriptionRef.current.value.trim());
+        dispatch({type:"addTask", payload:newTask});
         
-
-        if (newTaskDescription !== "") {
-            const newTask = {
-                title: newTaskTitle,
-                description: newTaskDescription,
-                state: false
-            };
-            updatedTasks = [...updatedTasks, newTask];
-            console.log(JSON.stringify(updatedTasks));
-            setList(updatedTasks);
-            closePopup();
-            
-        }
-        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+        closePopup();
     };
 
     useEffect(() => {
         const localStorageData = localStorage.getItem("tasks");
         const storedTasks = JSON.parse(localStorageData);
-        setList(storedTasks);
+        if (storedTasks !== null) {
+            dispatch({ type: "loadTasks", payload: storedTasks });
+        }
+       
     }, [])
-
 
     return (
         <ul>
             <div>
                 <button onClick={openPopup}>Add Task</button>
-                {list != null && list.map((task) => (
-                    <Task key={task.title} title={task.title} description={task.description} state={task.state} onToggleState={handleToggleState} onDeleteClick={handleDeleteClick} onEditClick={handleEditClick} />
-                ))}
+                <TaskContext.Provider value={{ tasks, dispatch }}>
+                    {tasks != null  && tasks.length > 0 && tasks.map((task, index) => (
+                    task && <div key={task.title}>
+                                <Task key={task.title} title={task.title} description={task.description} state={task.state} />
+                             </div>
+                    ))}
+                </TaskContext.Provider>
+
             </div>
             {isPopupOpen && (
                 <div className="popup">
                     <h2>Add New Task</h2>
-                    <input 
-                        type="text" 
-                        placeholder="Enter title" 
-                        ref={titleRef} 
+                    <input
+                        type="text"
+                        placeholder="Enter title"
+                        ref={titleRef}
                     />
                     <input
-                        type="text" 
-                        placeholder="Enter description" 
-                        ref={descriptionRef} 
+                        type="text"
+                        placeholder="Enter description"
+                        ref={descriptionRef}
                     />
-                    <button onClick={addTask}>Add Task</button>
+                    <button onClick={handleAddTask}>Add Task</button>
                     <button onClick={closePopup}>Cancel</button>
                 </div>
             )}
-            {isEditPopupOpen && (
-                <div className="editpopup">
-                    <h2>Edit task</h2>
-                    <input 
-                        type="text" 
-                        placeholder="Enter new title" 
-                        ref={editTitleRef} 
-                    />
-                    <input
-                        type="text" 
-                        placeholder="Enter new description" 
-                        ref={editDescriptionRef} 
-                    />
-                    <button onClick={handleEditTask}>Edit Task</button>
-                    <button onClick={closeEditPopup}>Cancel</button>
-                </div>
-            )}
-            
+
         </ul>
     )
 }
